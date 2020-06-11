@@ -3,6 +3,7 @@ var exphbs  = require('express-handlebars');
 var app = express();
 var os = require("os");
 var morgan  = require('morgan');
+var req = require('request');
 
 app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
@@ -12,10 +13,25 @@ app.use(morgan('combined'));
 // Configuration
 var port = process.env.PORT || 8080;
 var message = process.env.MESSAGE || "Hello world!";
+var getMessage = function() {
+    return new Promise(function(resolve, reject) {
+        if (!message.startsWith("http")) {
+            return resolve(message);
+        }
 
-app.get('/', function (req, res) {
+        req(message, {}, (err, res, body) => {
+            if (err) {
+                resolve(err);
+            }
+
+            return resolve(body);
+        });
+    });
+};
+
+app.get('/', async function (req, res) {
     res.render('home', {
-      message: message,
+      message: await getMessage(),
       platform: os.type(),
       release: os.release(),
       hostName: os.hostname()
